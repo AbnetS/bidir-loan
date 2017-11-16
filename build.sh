@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 DOCKER_PATH=$(which docker)
-SERVICE_NAME=loans-api
+SERVICE_NAME=loan-api
 IMAGE_TAG=bidir/$SERVICE_NAME
 EXPOSE_PORT=8110
 CONT_PORT=8110
