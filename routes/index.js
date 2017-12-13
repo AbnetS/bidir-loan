@@ -6,9 +6,9 @@
 const Router = require('koa-router');
 const debug  = require('debug')('api:app-router');
 
-const rootRouter          = require('./root');
-const formRouter      = require('./form');
-const questionRouter      = require('./question');
+const rootRouter        = require('./root');
+const answerRouter      = require('./answer');
+const loanRouter   = require('./loan');
 
 var appRouter = new Router();
 
@@ -22,10 +22,10 @@ appRouter.OPEN_ENDPOINTS = OPEN_ENDPOINTS;
 
 // Add Root Router
 composeRoute('', rootRouter);
-//Add clients Router
-composeRoute('forms', formRouter);
-//Add clients Router
-composeRoute('forms/questions', questionRouter);
+//Add Screenings Router
+composeRoute('loans', loanRouter);
+//Add answer Router
+composeRoute('loans/answers', answerRouter);
 
 function composeRoute(endpoint, router){
   appRouter.use(`/${endpoint}`, router.routes(), router.allowedMethods());

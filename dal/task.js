@@ -1,86 +1,76 @@
 'use strict';
-// Access Layer for Form Data.
+// Access Layer for Task Data.
 
 /**
  * Load Module Dependencies.
  */
-const debug   = require('debug')('api:dal-form');
+const debug   = require('debug')('api:dal-task');
 const moment  = require('moment');
 const _       = require('lodash');
 const co      = require('co');
 
-const Form    = require('../models/form');
-const Question = require('../models/question');
+const Task        = require('../models/task');
 const mongoUpdate   = require('../lib/mongo-update');
 
-var returnFields = Form.attributes;
-var population = [{
-  path: 'questions',
-  select: Question.attributes,
-  populate: {
-    path: 'sub_questions',
-   select: Question.attributes,
-  }
-}];
+var returnFields = Task.attributes;
+var population = [];
 
 /**
- * create a new form.
+ * create a new task.
  *
- * @desc  creates a new form and saves them
+ * @desc  creates a new task and saves them
  *        in the database
  *
- * @param {Object}  formData  Data for the form to create
+ * @param {Object}  taskData  Data for the task to create
  *
  * @return {Promise}
  */
-exports.create = function create(formData) {
-  debug('creating a new form');
+exports.create = function create(taskData) {
+  debug('creating a new task');
 
   return co(function* () {
+    let unsavedTask = new Task(taskData);
+    let newTask = yield unsavedTask.save();
+    let task = yield exports.get({ _id: newTask._id });
 
-    let unsavedForm = new Form(formData);
-    let newForm = yield unsavedForm.save();
-    let form = yield exports.get({ _id: newForm._id });
-
-    return form;
-
+    return task;
 
   });
 
 };
 
 /**
- * delete a form
+ * delete a task
  *
- * @desc  delete data of the form with the given
+ * @desc  delete data of the task with the given
  *        id
  *
  * @param {Object}  query   Query Object
  *
  * @return {Promise}
  */
-exports.delete = function deleteForm(query) {
-  debug('deleting form: ', query);
+exports.delete = function deleteTask(query) {
+  debug('deleting task: ', query);
 
   return co(function* () {
-    let form = yield exports.get(query);
+    let task = yield exports.get(query);
     let _empty = {};
 
-    if(!form) {
+    if(!task) {
       return _empty;
     } else {
-      yield form.remove();
+      yield task.remove();
 
-      return form;
+      return task;
     }
 
   });
 };
 
 /**
- * update a form
+ * update a task
  *
- * @desc  update data of the form with the given
+ * @desc  update data of the task with the given
  *        id
  *
  * @param {Object} query Query object
@@ -89,7 +79,7 @@ exports.delete = function deleteForm(query) {
  * @return {Promise}
  */
 exports.update = function update(query, updates) {
-  debug('updating form: ', query);
+  debug('updating task: ', query);
 
   let now = moment().toISOString();
   let opts = {
@@ -99,44 +89,44 @@ exports.update = function update(query, updates) {
 
   updates = mongoUpdate(updates);
 
-  return Form.findOneAndUpdate(query, updates, opts)
+  return Task.findOneAndUpdate(query, updates, opts)
       .populate(population)
       .exec();
 };
 
 /**
- * get a form.
+ * get a task.
  *
- * @desc get a form with the given id from db
+ * @desc get a task with the given id from db
  *
  * @param {Object} query Query Object
  *
  * @return {Promise}
  */
-exports.get = function get(query, form) {
-  debug('getting form ', query);
+exports.get = function get(query, task) {
+  debug('getting task ', query);
 
-  return Form.findOne(query, returnFields)
+  return Task.findOne(query, returnFields)
     .populate(population)
     .exec();
 
 };
 
 /**
- * get a collection of forms
+ * get a collection of tasks
  *
- * @desc get a collection of forms from db
+ * @desc get a collection of tasks from db
  *
  * @param {Object} query Query Object
  *
  * @return {Promise}
  */
 exports.getCollection = function getCollection(query, qs) {
-  debug('fetching a collection of forms');
+  debug('fetching a collection of tasks');
 
   return new Promise((resolve, reject) => {
     resolve(
-     Form
+     Task
       .find(query, returnFields)
       .populate(population)
       .stream());
@@ -146,16 +136,16 @@ exports.getCollection = function getCollection(query, qs) {
 };
 
 /**
- * get a collection of forms using pagination
+ * get a collection of tasks using pagination
  *
- * @desc get a collection of forms from db
+ * @desc get a collection of tasks from db
  *
  * @param {Object} query Query Object
  *
  * @return {Promise}
  */
 exports.getCollectionByPagination = function getCollection(query, qs) {
-  debug('fetching a collection of forms');
+  debug('fetching a collection of tasks');
 
   let opts = {
     select:  returnFields,
@@ -167,7 +157,7 @@ exports.getCollectionByPagination = function getCollection(query, qs) {
 
 
   return new Promise((resolve, reject) => {
-    Form.paginate(query, opts, function (err, docs) {
+    Task.paginate(query, opts, function (err, docs) {
       if(err) {
         return reject(err);
       }

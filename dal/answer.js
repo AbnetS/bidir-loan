@@ -1,48 +1,43 @@
 'use strict';
-// Access Layer for Form Data.
+// Access Layer for Answer Data.
 
 /**
  * Load Module Dependencies.
  */
-const debug   = require('debug')('api:dal-form');
+const debug   = require('debug')('api:dal-answer');
 const moment  = require('moment');
 const _       = require('lodash');
 const co      = require('co');
 
-const Form    = require('../models/form');
-const Question = require('../models/question');
+const Answer    = require('../models/answer');
 const mongoUpdate   = require('../lib/mongo-update');
 
-var returnFields = Form.attributes;
+var returnFields = Answer.attributes;
 var population = [{
-  path: 'questions',
-  select: Question.attributes,
-  populate: {
-    path: 'sub_questions',
-   select: Question.attributes,
-  }
+  path: 'sub_answers',
+  select: Answer.attributes
 }];
 
 /**
- * create a new form.
+ * create a new answer.
  *
- * @desc  creates a new form and saves them
+ * @desc  creates a new answer and saves them
  *        in the database
  *
- * @param {Object}  formData  Data for the form to create
+ * @param {Object}  answerData  Data for the answer to create
  *
  * @return {Promise}
  */
-exports.create = function create(formData) {
-  debug('creating a new form');
+exports.create = function create(answerData) {
+  debug('creating a new answer');
 
   return co(function* () {
 
-    let unsavedForm = new Form(formData);
-    let newForm = yield unsavedForm.save();
-    let form = yield exports.get({ _id: newForm._id });
+    let unsavedAnswer = new Answer(answerData);
+    let newAnswer = yield unsavedAnswer.save();
+    let answer = yield exports.get({ _id: newAnswer._id });
 
-    return form;
+    return answer;
 
 
   });
@@ -50,37 +45,37 @@ exports.create = function create(formData) {
 };
 
 /**
- * delete a form
+ * delete a answer
  *
- * @desc  delete data of the form with the given
+ * @desc  delete data of the answer with the given
  *        id
  *
  * @param {Object}  query   Query Object
  *
  * @return {Promise}
  */
-exports.delete = function deleteForm(query) {
-  debug('deleting form: ', query);
+exports.delete = function deleteAnswer(query) {
+  debug('deleting answer: ', query);
 
   return co(function* () {
-    let form = yield exports.get(query);
+    let answer = yield exports.get(query);
     let _empty = {};
 
-    if(!form) {
+    if(!answer) {
       return _empty;
     } else {
-      yield form.remove();
+      yield answer.remove();
 
-      return form;
+      return answer;
     }
 
   });
 };
 
 /**
- * update a form
+ * update a answer
  *
- * @desc  update data of the form with the given
+ * @desc  update data of the answer with the given
  *        id
  *
  * @param {Object} query Query object
@@ -89,7 +84,7 @@ exports.delete = function deleteForm(query) {
  * @return {Promise}
  */
 exports.update = function update(query, updates) {
-  debug('updating form: ', query);
+  debug('updating answer: ', query);
 
   let now = moment().toISOString();
   let opts = {
@@ -99,44 +94,44 @@ exports.update = function update(query, updates) {
 
   updates = mongoUpdate(updates);
 
-  return Form.findOneAndUpdate(query, updates, opts)
+  return Answer.findOneAndUpdate(query, updates, opts)
       .populate(population)
       .exec();
 };
 
 /**
- * get a form.
+ * get a answer.
  *
- * @desc get a form with the given id from db
+ * @desc get a answer with the given id from db
  *
  * @param {Object} query Query Object
  *
  * @return {Promise}
  */
-exports.get = function get(query, form) {
-  debug('getting form ', query);
+exports.get = function get(query, answer) {
+  debug('getting answer ', query);
 
-  return Form.findOne(query, returnFields)
+  return Answer.findOne(query, returnFields)
     .populate(population)
     .exec();
 
 };
 
 /**
- * get a collection of forms
+ * get a collection of answers
  *
- * @desc get a collection of forms from db
+ * @desc get a collection of answers from db
  *
  * @param {Object} query Query Object
  *
  * @return {Promise}
  */
 exports.getCollection = function getCollection(query, qs) {
-  debug('fetching a collection of forms');
+  debug('fetching a collection of answers');
 
   return new Promise((resolve, reject) => {
     resolve(
-     Form
+     Answer
       .find(query, returnFields)
       .populate(population)
       .stream());
@@ -146,20 +141,20 @@ exports.getCollection = function getCollection(query, qs) {
 };
 
 /**
- * get a collection of forms using pagination
+ * get a collection of answers using pagination
  *
- * @desc get a collection of forms from db
+ * @desc get a collection of answers from db
  *
  * @param {Object} query Query Object
  *
  * @return {Promise}
  */
 exports.getCollectionByPagination = function getCollection(query, qs) {
-  debug('fetching a collection of forms');
+  debug('fetching a collection of answers');
 
   let opts = {
     select:  returnFields,
-    sortBy:   qs.sort || {},
+    sort:   qs.sort || {},
     populate: population,
     page:     qs.page,
     limit:    qs.limit
@@ -167,7 +162,7 @@ exports.getCollectionByPagination = function getCollection(query, qs) {
 
 
   return new Promise((resolve, reject) => {
-    Form.paginate(query, opts, function (err, docs) {
+    Answer.paginate(query, opts, function (err, docs) {
       if(err) {
         return reject(err);
       }

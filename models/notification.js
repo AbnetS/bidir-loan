@@ -1,4 +1,4 @@
-// Role Model Definiton.
+// Notification Model Definiton.
 
 /**
  * Load Module Dependencies.
@@ -9,16 +9,16 @@ var paginator = require('mongoose-paginate');
 
 var Schema = mongoose.Schema;
 
-var RoleSchema = new Schema({       
-    name:           { type: String, required: true },
-    description:    { type: String },
-    permissions:    [{ type: Schema.Types.ObjectId, ref:'Permission'}], 
+var NotificationSchema = new Schema({      
+    message:     { type: String, default: '' },
+    for:         { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    task_ref:    { type: Schema.Types.ObjectId, ref: 'Task', default: null },
     date_created:   { type: Date },
     last_modified:  { type: Date }
 });
 
 // add mongoose-troop middleware to support pagination
-RoleSchema.plugin(paginator);
+NotificationSchema.plugin(paginator);
 
 /**
  * Pre save middleware.
@@ -27,7 +27,7 @@ RoleSchema.plugin(paginator);
  *          attributes prior to save.
  *        - Hash tokens password.
  */
-RoleSchema.pre('save', function preSaveMiddleware(next) {
+NotificationSchema.pre('save', function preSaveMiddleware(next) {
   var instance = this;
 
   // set date modifications
@@ -41,15 +41,17 @@ RoleSchema.pre('save', function preSaveMiddleware(next) {
 });
 
 /**
- * Filter Role Attributes to expose
+ * Filter Notification Attributes to expose
  */
-RoleSchema.statics.attributes = {
+NotificationSchema.statics.attributes = {
   _id: 1,
-  name: 1,
-  description: 1,
-  permissions: 1
+  message: 1,
+  for: 1,
+  task_ref: 1,
+  date_created: 1,
+  last_modified: 1
 };
 
 
-// Expose Role model
-module.exports = mongoose.model('Role', RoleSchema);
+// Expose Notification model
+module.exports = mongoose.model('Notification', NotificationSchema);
