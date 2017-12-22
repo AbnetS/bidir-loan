@@ -175,6 +175,8 @@ exports.fetchOne = function* fetchOneLoan(next) {
 exports.updateStatus = function* updateLoan(next) {
   debug(`updating status loan: ${this.params.id}`);
 
+  return this.body = { message: 'Use PUT /loans/:id' };
+
   let isPermitted = yield hasPermission(this.state._user, 'AUTHORIZE');
   if(!isPermitted) {
     return this.throw(new CustomError({
@@ -185,7 +187,7 @@ exports.updateStatus = function* updateLoan(next) {
 
   this.checkBody('status')
       .notEmpty('Status should not be empty')
-      .isIn(['inprogress','approved', 'submitted','declined_final', 'declined_under_review'], 'Correct Status is either inprogress, declined_final, approved, submitted or declined_under_review');
+      .isIn(['inprogress','accepted', 'submitted','declined_final', 'declined_under_review'], 'Correct Status is either inprogress, declined_final, approved, submitted or declined_under_review');
 
   let query = {
     _id: this.params.id
@@ -254,9 +256,11 @@ exports.update = function* updateLoan(next) {
     }));
   }
 
+  let canApprove = yield hasPermission(this.state._user, 'AUTHORIZE');
+
   this.checkBody('status')
-      .notEmpty('Loan Status is Empty')
-      .isIn(['inprogress', 'submitted'], 'Correct Status is either inprogress, or submitted');
+      .notEmpty('Status should not be empty')
+      .isIn(['inprogress','submitted', 'accepted','declined_final', 'declined_under_review'], 'Correct Status is either inprogress, accepted, submitted, declined_final or declined_under_review');
 
   let query = {
     _id: this.params.id
@@ -265,11 +269,41 @@ exports.update = function* updateLoan(next) {
   let body = this.request.body;
 
   try {
+    if(body.status === 'accepted' || body.status === 'declined_final' || body.status === 'declined_under_review' ) {
+      if(!canApprove) {
+        throw new Error("You Don't have enough permissions to complete this action");
+      }
+    }
     let loan = yield LoanDal.get(query);
     let client    = yield ClientDal.get({ _id: loan.client });
 
-    if(loan.status === 'new') {
-      client = yield ClientDal.update({ _id: loan.client }, { status: 'inprogress' });
+    if(body.status === 'accepted') {
+      //client = yield ClientDal.update({ _id: screening.client }, { status: 'eligible' });
+      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'done' });
+      yield NotificationDal.create({
+        for: task.created_by,
+        message: `Loan Application of ${client.first_name} ${client.last_name} has been accepted`,
+        task_ref: task._id
+      });
+
+    } else if(body.status === 'declined_final') {
+      //client = yield ClientDal.update({ _id: screening.client }, { status: 'ineligible' });
+      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'done' });
+      yield NotificationDal.create({
+        for: task.created_by,
+        message: `Loan Application of ${client.first_name} ${client.last_name} has been declined in Final`,
+        task_ref: task._id
+      });
+
+    } else if(body.status === 'declined_under_review') {
+      //client = yield ClientDal.update({ _id: screening.client }, { status: 'ineligible' });
+      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'done' });
+      yield NotificationDal.create({
+        for: task.created_by,
+        message: `Loan Application of ${client.first_name} ${client.last_name} has been declined For Further Review`,
+        task_ref: task._id
+      });
+
     }
     
     let mandatory = false;
