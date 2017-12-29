@@ -311,10 +311,19 @@ exports.update = function* updateLoan(next) {
     } else if(body.status === 'declined_under_review') {
       client = yield ClientDal.update({ _id: screening.client }, { status: 'loan_application_inprogress' });
       let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'done' });
+      // Create Review Task
+      let _task = yield TaskDal.create({
+        task: `Review Loan Application of ${client.first_name} ${client.last_name}`,
+        task_type: 'review',
+        entity_ref: loan._id,
+        entity_type: 'loan',
+        created_by: this.state._user._id,
+        user: task.created_by
+      });
       yield NotificationDal.create({
-        for: task.created_by,
+        for: this.state._user._id,
         message: `Loan Application of ${client.first_name} ${client.last_name} has been declined For Further Review`,
-        task_ref: task._id
+        task_ref: _task._id
       });
 
     }
