@@ -264,6 +264,13 @@ exports.update = function* updateLoan(next) {
       .notEmpty('Status should not be empty')
       .isIn(['inprogress','submitted', 'accepted','declined_final', 'declined_under_review'], 'Correct Status is either inprogress, accepted, submitted, declined_final or declined_under_review');
 
+  if(this.errors) {
+    return this.throw(new CustomError({
+      type: 'LOAN_UPDATE_ERROR',
+      message: JSON.stringify(this.errors)
+    }));
+  }
+
   let query = {
     _id: this.params.id
   };
