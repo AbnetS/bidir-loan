@@ -291,7 +291,7 @@ exports.update = function* updateLoan(next) {
     }
 
     if(body.status === 'accepted') {
-      client = yield ClientDal.update({ _id: screening.client }, { status: 'loan_application_accepted' });
+      client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_accepted' });
       let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'done' });
       yield NotificationDal.create({
         for: task.created_by,
@@ -300,7 +300,7 @@ exports.update = function* updateLoan(next) {
       });
 
     } else if(body.status === 'declined_final') {
-      client = yield ClientDal.update({ _id: screening.client }, { status: 'loan_application_declined' });
+      client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_declined' });
       let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'done' });
       yield NotificationDal.create({
         for: task.created_by,
@@ -309,7 +309,7 @@ exports.update = function* updateLoan(next) {
       });
 
     } else if(body.status === 'declined_under_review') {
-      client = yield ClientDal.update({ _id: screening.client }, { status: 'loan_application_inprogress' });
+      client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_inprogress' });
       let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'done' });
       // Create Review Task
       let _task = yield TaskDal.create({
