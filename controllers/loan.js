@@ -18,6 +18,8 @@ const config             = require('../config');
 const CustomError        = require('../lib/custom-error');
 const checkPermissions   = require('../lib/permissions');
 
+const Account            = require('../models/account');
+
 const TokenDal           = require('../dal/token');
 const LoanDal            = require('../dal/loan');
 const AnswerDal          = require('../dal/answer');
@@ -397,10 +399,26 @@ exports.update = function* updateLoan(next) {
 exports.fetchAllByPagination = function* fetchAllLoans(next) {
   debug('get a collection of loans by pagination');
 
+  let isPermitted = yield hasPermission(this.state._user, 'VIEW');
+
   // retrieve pagination query params
   let page   = this.query.page || 1;
   let limit  = this.query.per_page || 10;
   let query = {};
+
+  if(!this.query.source || (this.query.source != 'web' && this.query.source != 'app')) {
+    return this.throw(new CustomError({
+      type: 'VIEW_LOANS_COLLECTION_ERROR',
+      message: 'Query Source should be either web or app'
+    }));
+  }
+
+  if(this.query.source == 'web' && !isPermitted) {
+    return this.throw(new CustomError({
+      type: 'VIEW_LOANS_COLLECTION_ERROR',
+      message: "You Don't have enough permissions to complete this action"
+    }));
+  }
 
   let sortType = this.query.sort_by;
   let sort = {};
@@ -413,12 +431,32 @@ exports.fetchAllByPagination = function* fetchAllLoans(next) {
   };
 
   try {
+    let user = this.state._user;
+    let account = yield Account.findOne({ user: user._id }).exec();
+
+    if(this.query.source == 'app') {
+      if(user.role == 'super' || user.realm == 'super' || !account) {
+        throw new Error('Please View Using Web!!');
+      }
+
+      query = {
+        created_by: account._id
+      };
+
+    } else if(this.query.source == 'web') {
+      if(user.role != 'super' && user.realm != 'super') {
+        query = {
+          branch: { $in: account.access_branches }
+        };
+      }
+    }
+
     let loans = yield LoanDal.getCollectionByPagination(query, opts);
 
     this.body = loans;
   } catch(ex) {
     return this.throw(new CustomError({
-      type: 'FETCH_PAGINATED_LOANS_COLLECTION_ERROR',
+      type: 'VIEW_LOANS_COLLECTION_ERROR',
       message: ex.message
     }));
   }

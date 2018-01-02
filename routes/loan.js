@@ -70,7 +70,7 @@ router.post('/create', acl(['*']), loanController.create);
  *
  * @apiDescription Get a collection of loans. The endpoint has pagination
  * out of the box. Use these params to query with pagination: `page=<RESULTS_PAGE`
- * and `per_page=<RESULTS_PER_PAGE>`.
+ * and `per_page=<RESULTS_PER_PAGE>`. __QUERY SOURCE MUST BE SPECIFIED LIKE ?source=<web|app>__
  *
  * @apiSuccess {String} _id loan id
  * @apiSuccess {String} type Loan Type ie Loan or Loan Application
