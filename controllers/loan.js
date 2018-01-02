@@ -27,6 +27,7 @@ const ClientDal          = require('../dal/client');
 const TaskDal            = require('../dal/task');
 const FormDal            = require('../dal/form');
 const AccountDal         = require('../dal/account');
+const ScreeningDal       = require('../dal/screening');
 
 let hasPermission = checkPermissions.isPermitted('LOAN');
 
@@ -63,6 +64,11 @@ exports.create = function* createLoan(next) {
     let client = yield ClientDal.get({ _id: body.client });
     if(!client) {
       throw new Error('Client Does Not Exist!!');
+    }
+
+    let screening = yield ScreeningDal.get({ client: client._id });
+    if(screening.status != 'approved') {
+      throw new Error('Screening Application Has Not Been Approved Yet');
     }
 
     let loan = yield LoanDal.get({ client: client._id });
@@ -292,7 +298,7 @@ exports.update = function* updateLoan(next) {
 
     if(body.status === 'accepted') {
       client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_accepted' });
-      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'done' });
+      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed' });
       yield NotificationDal.create({
         for: task.created_by,
         message: `Loan Application of ${client.first_name} ${client.last_name} has been accepted`,
@@ -301,7 +307,7 @@ exports.update = function* updateLoan(next) {
 
     } else if(body.status === 'declined_final') {
       client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_declined' });
-      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'done' });
+      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed' });
       yield NotificationDal.create({
         for: task.created_by,
         message: `Loan Application of ${client.first_name} ${client.last_name} has been declined in Final`,
@@ -310,7 +316,7 @@ exports.update = function* updateLoan(next) {
 
     } else if(body.status === 'declined_under_review') {
       client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_inprogress' });
-      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'done' });
+      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed' });
       // Create Review Task
       let _task = yield TaskDal.create({
         task: `Review Loan Application of ${client.first_name} ${client.last_name}`,
