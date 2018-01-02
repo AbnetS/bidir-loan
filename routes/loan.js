@@ -32,7 +32,7 @@ var router  = Router();
  * @apiSuccess {String} title Loan Title
  * @apiSuccess {String} process Loan Process
  * @apiSuccess {Array} answers Loan Answers
- * @apiSuccess {String} created_by Officer Account registering this
+ * @apiSuccess {String} created_by User registering this
  * @apiSuccess {String} client Client Reference being screened
  * @apiSuccess {String} status Status ie incomplete, completed, cancelled, approved or submitted
  *
@@ -78,7 +78,7 @@ router.post('/create', acl(['*']), loanController.create);
  * @apiSuccess {String} title Loan Title
  * @apiSuccess {String} process Loan Process
  * @apiSuccess {Array} answers Loan Answers
- * @apiSuccess {String} created_by Officer Account registering this
+ * @apiSuccess {String} created_by User registering this
  * @apiSuccess {String} client Client Reference being screened
  * @apiSuccess {String} status Status ie incomplete, completed, cancelled , approved or submitted
  *
@@ -124,7 +124,7 @@ router.get('/paginate', acl(['*']), loanController.fetchAllByPagination);
  * @apiSuccess {String} title Loan Title
  * @apiSuccess {String} process Loan Process
  * @apiSuccess {Array} answers Loan Answers
- * @apiSuccess {String} created_by Officer Account registering this
+ * @apiSuccess {String} created_by User registering this
  * @apiSuccess {String} client Client Reference being screened
  * @apiSuccess {String} status Status ie incomplete, completed, cancelled, approved or submitted
  *
@@ -171,7 +171,7 @@ router.get('/:id', acl(['*']), loanController.fetchOne);
  * @apiSuccess {String} title Loan Title
  * @apiSuccess {String} process Loan Process
  * @apiSuccess {Array} answers Loan Answers
- * @apiSuccess {String} created_by Officer Account registering this
+ * @apiSuccess {String} created_by User registering this
  * @apiSuccess {String} client Client Reference being screened
  * @apiSuccess {String} status Status ie incomplete, completed, cancelled, approved or submitted
  *
@@ -216,7 +216,7 @@ router.put('/:id', acl(['*']), loanController.update);
  * @apiSuccess {String} title Loan Title
  * @apiSuccess {String} process Loan Process
  * @apiSuccess {Array} answers Loan Answers
- * @apiSuccess {String} created_by Officer Account registering this
+ * @apiSuccess {String} created_by User registering this
  * @apiSuccess {String} client Client Reference being screened
  * @apiSuccess {String} status Status ie incomplete, completed, cancelled
  *
@@ -254,7 +254,7 @@ router.put('/:id/status', acl(['*']), loanController.updateStatus);
  * @apiSuccess {String} title Loan Title
  * @apiSuccess {String} process Loan Process
  * @apiSuccess {Array} answers Loan Answers
- * @apiSuccess {String} created_by Officer Account registering this
+ * @apiSuccess {String} created_by User registering this
  * @apiSuccess {String} client Client Reference being screened
  * @apiSuccess {String} status Status ie incomplete, completed, cancelled, approved or submitted
  *

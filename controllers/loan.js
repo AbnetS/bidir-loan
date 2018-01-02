@@ -104,16 +104,13 @@ exports.create = function* createLoan(next) {
       answers.push(answer);
     }
 
-    let account = yield AccountDal.get({ user: this.state._user._id });
-    if(!account) {
-      account = this.state._user;
-    }
 
     loanBody.answers = answers;
     loanBody.client = client._id;
     loanBody.title = 'Loan Form';
-    loanBody.description = `Loan Process For ${client.first_name} ${client.last_name}`;
-    loanBody.created_by = account._id;
+    loanBody.description = `Loan Application For ${client.first_name} ${client.last_name}`;
+    loanBody.created_by = this.state._user._id;
+    loanBody.branch = client.branch._id;
 
     // Create Loan Type
     loan = yield LoanDal.create(loanBody);
@@ -440,14 +437,18 @@ exports.fetchAllByPagination = function* fetchAllLoans(next) {
       }
 
       query = {
-        created_by: account._id
+        created_by: user._id
       };
 
     } else if(this.query.source == 'web') {
       if(user.role != 'super' && user.realm != 'super') {
-        query = {
-          branch: { $in: account.access_branches }
-        };
+        if(account.access_branches.length) {
+          query.branch = { $in: account.access_branches };
+
+        } else if(account.default_branch) {
+          query.branch = account.default_branch;
+
+        }
       }
     }
 
