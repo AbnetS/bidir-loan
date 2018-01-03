@@ -298,39 +298,44 @@ exports.update = function* updateLoan(next) {
     if(body.status === 'accepted') {
       client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_accepted' });
       let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed' });
-      yield NotificationDal.create({
-        for: task.created_by,
-        message: `Loan Application of ${client.first_name} ${client.last_name} has been accepted`,
-        task_ref: task._id
-      });
-
+      if(task) {
+        yield NotificationDal.create({
+          for: task.created_by,
+          message: `Loan Application of ${client.first_name} ${client.last_name} has been accepted`,
+          task_ref: task._id
+        });
+      }
+      
     } else if(body.status === 'declined_final') {
       client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_declined' });
       let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed' });
-      yield NotificationDal.create({
-        for: task.created_by,
-        message: `Loan Application of ${client.first_name} ${client.last_name} has been declined in Final`,
-        task_ref: task._id
-      });
+      if(task) {
+        yield NotificationDal.create({
+          for: task.created_by,
+          message: `Loan Application of ${client.first_name} ${client.last_name} has been declined in Final`,
+          task_ref: task._id
+        });
+      }
 
     } else if(body.status === 'declined_under_review') {
       client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_inprogress' });
       let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed' });
-      // Create Review Task
-      let _task = yield TaskDal.create({
-        task: `Review Loan Application of ${client.first_name} ${client.last_name}`,
-        task_type: 'review',
-        entity_ref: loan._id,
-        entity_type: 'loan',
-        created_by: this.state._user._id,
-        user: task.created_by
-      });
-      yield NotificationDal.create({
-        for: this.state._user._id,
-        message: `Loan Application of ${client.first_name} ${client.last_name} has been declined For Further Review`,
-        task_ref: _task._id
-      });
-
+      if(task) {
+        // Create Review Task
+        let _task = yield TaskDal.create({
+          task: `Review Loan Application of ${client.first_name} ${client.last_name}`,
+          task_type: 'review',
+          entity_ref: loan._id,
+          entity_type: 'loan',
+          created_by: this.state._user._id,
+          user: task.created_by
+        });
+        yield NotificationDal.create({
+          for: this.state._user._id,
+          message: `Loan Application of ${client.first_name} ${client.last_name} has been declined For Further Review`,
+          task_ref: _task._id
+        });
+      }
     }
     
     let mandatory = false;
