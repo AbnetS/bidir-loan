@@ -109,7 +109,7 @@ exports.create = function* createLoan(next) {
     loanBody.client = client._id;
     loanBody.title = 'Loan Form';
     loanBody.description = `Loan Application For ${client.first_name} ${client.last_name}`;
-    loanBody.created_by = this.state._user._id;
+    loanBody.created_by = client.created_by;
     loanBody.branch = client.branch._id;
 
     // Create Loan Type
