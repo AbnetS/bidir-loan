@@ -408,7 +408,7 @@ exports.fetchAllByPagination = function* fetchAllLoans(next) {
   let limit  = this.query.per_page || 10;
   let query = {};
 
-  if(!this.query.source || (this.query.source != 'web' && this.query.source != 'app')) {
+  /*if(!this.query.source || (this.query.source != 'web' && this.query.source != 'app')) {
     return this.throw(new CustomError({
       type: 'VIEW_LOANS_COLLECTION_ERROR',
       message: 'Query Source should be either web or app'
@@ -420,7 +420,7 @@ exports.fetchAllByPagination = function* fetchAllLoans(next) {
       type: 'VIEW_LOANS_COLLECTION_ERROR',
       message: "You Don't have enough permissions to complete this action"
     }));
-  }
+  }*/
 
   let sortType = this.query.sort_by;
   let sort = {};
@@ -432,31 +432,38 @@ exports.fetchAllByPagination = function* fetchAllLoans(next) {
     sort: sort
   };
 
+   let canViewAll =  yield hasPermission(this.state._user, 'VIEW_ALL');
+  let canView =  yield hasPermission(this.state._user, 'VIEW');
+
   try {
     let user = this.state._user;
     let account = yield Account.findOne({ user: user._id }).exec();
 
-    if(this.query.source == 'app') {
-      if(user.role == 'super' || user.realm == 'super' || !account) {
-        throw new Error('Please View Using Web!!');
+    // Super Admin
+    if (!account) {
+        query = {};
+
+    // Can VIEW ALL
+    } else if (canViewAll) {
+      if(account.access_branches.length) {
+          query.branch = { $in: account.access_branches };
+
+      } else if(account.default_branch) {
+          query.branch = account.default_branch;
+
       }
-      
-      if(!account.multi_branch) {
+
+    // Can VIEW
+    } else if(canView) {
         query = {
           created_by: user._id
         };
-      }
 
-    } else if(this.query.source == 'web') {
-      if(!account.multi_branch) {
-        if(account.access_branches.length) {
-          query.access_branches = { $in: account.access_branches };
-
-        } else if(account.default_branch) {
-          query.default_branch = account.default_branch;
-
-        }
-      }
+    // DEFAULT
+    } else {
+      query = {
+          created_by: user._id
+        };
     }
 
     let loans = yield LoanDal.getCollectionByPagination(query, opts);
@@ -517,4 +524,99 @@ exports.remove = function* removeLoan(next) {
 
   }
 
+};
+
+/**
+ * Search Loans
+ *
+ * @desc Search a collection of loans
+ *
+ * @param {Function} next Middleware dispatcher
+ */
+exports.search = function* searchLoans(next) {
+  debug('get a collection of loans by pagination');
+
+  // retrieve pagination query params
+  let page   = this.query.page || 1;
+  let limit  = this.query.per_page || 10;
+
+  let sortType = this.query.sort_by;
+  let sort = {};
+  sortType ? (sort[sortType] = -1) : (sort.date_created = -1 );
+
+  let opts = {
+    page: +page,
+    limit: +limit,
+    sort: sort
+  };
+
+  let canViewAll =  yield hasPermission(this.state._user, 'VIEW_ALL');
+  let canView =  yield hasPermission(this.state._user, 'VIEW');
+
+  try {
+
+    let user = this.state._user;
+    let account = yield Account.findOne({ user: user._id }).exec();
+    let query = {};
+
+    let searchTerm = this.query.search;
+    if(!searchTerm) {
+      throw new Error('Please Provide A Search Term');
+    }
+
+    // Super Admin
+    if (!account) {
+        query = {};
+
+    // Can VIEW ALL
+    } else if (canViewAll) {
+      if(account.access_branches.length) {
+          query.branch = { $in: account.access_branches };
+
+      } else if(account.default_branch) {
+          query.branch = account.default_branch;
+
+      }
+
+    // Can VIEW
+    } else if(canView) {
+        query = {
+          created_by: user._id
+        };
+
+    // DEFAULT
+    } else {
+      query = {
+          created_by: user._id
+        };
+    }
+
+    query.$or = [];
+
+    if(validator.isMongoId(searchTerm)) {
+      query.$or.push({
+        client: searchTerm
+      })
+    }
+
+    searchTerm = { $regex: new RegExp(`${searchTerm}`), $options: 'i' };
+
+    query.$or.push({
+        title: searchTerm
+      },{
+        description: searchTerm
+      },{
+        status: searchTerm
+    })
+   
+    let loans = yield LoanDal.getCollectionByPagination(query, opts);
+
+    this.body = loans;
+
+  } catch(ex) {
+    return this.throw(new CustomError({
+      type: 'SEARCH_LOANS_ERROR',
+      message: ex.message
+    }));
+  }
 };
