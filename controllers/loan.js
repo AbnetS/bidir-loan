@@ -328,7 +328,8 @@ exports.update = function* updateLoan(next) {
           entity_ref: loan._id,
           entity_type: 'loan',
           created_by: this.state._user._id,
-          user: task.created_by
+          user: task.created_by,
+          branch: loan.branch
         });
         yield NotificationDal.create({
           for: this.state._user._id,
@@ -368,7 +369,8 @@ exports.update = function* updateLoan(next) {
         task_type: 'approve',
         entity_ref: loan._id,
         entity_type: 'loan',
-        created_by: this.state._user._id
+        created_by: this.state._user._id,
+        branch: loan.branch
       })
     }
 
@@ -591,23 +593,33 @@ exports.search = function* searchLoans(next) {
         };
     }
 
+    let searchTerm = this.query.search;
+    if(!searchTerm) {
+      throw new Error('Please Provide A Search Term');
+    }
+    
     query.$or = [];
 
-    if(validator.isMongoId(searchTerm)) {
-      query.$or.push({
-        client: searchTerm
-      })
+    let terms = searchTerm.split(/\s+/);
+    let groupTerms = { $in: [] };
+
+    for(let term of terms) {
+      if(validator.isMongoId(term)) {
+        throw new Error('IDs are not supported for Search');
+      }
+
+      term = new RegExp(`${term}`, 'i')
+
+      groupTerms.$in.push(term);
     }
 
-    searchTerm = { $regex: new RegExp(`${searchTerm}`), $options: 'i' };
-
     query.$or.push({
-        title: searchTerm
+        title: groupTerms
       },{
-        description: searchTerm
+        description: groupTerms
       },{
-        status: searchTerm
-    })
+        status: groupTerms
+    });
    
     let loans = yield LoanDal.getCollectionByPagination(query, opts);
 
