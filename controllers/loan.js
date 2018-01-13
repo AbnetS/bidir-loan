@@ -442,7 +442,7 @@ exports.fetchAllByPagination = function* fetchAllLoans(next) {
     let account = yield Account.findOne({ user: user._id }).exec();
 
     // Super Admin
-    if (!account) {
+    if (!account || (account.multi_branches && canViewAll)) {
         query = {};
 
     // Can VIEW ALL
@@ -567,7 +567,7 @@ exports.search = function* searchLoans(next) {
     }
 
     // Super Admin
-    if (!account) {
+    if (!account || (account.multi_branches && canViewAll)) {
         query = {};
 
     // Can VIEW ALL
@@ -593,11 +593,6 @@ exports.search = function* searchLoans(next) {
         };
     }
 
-    let searchTerm = this.query.search;
-    if(!searchTerm) {
-      throw new Error('Please Provide A Search Term');
-    }
-    
     query.$or = [];
 
     let terms = searchTerm.split(/\s+/);
