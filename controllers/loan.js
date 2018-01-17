@@ -267,7 +267,7 @@ exports.update = function* updateLoan(next) {
 
   this.checkBody('status')
       .notEmpty('Status should not be empty')
-      .isIn(['inprogress','submitted', 'accepted','declined_final', 'declined_under_review'], 'Correct Status is either inprogress, accepted, submitted, declined_final or declined_under_review');
+      .isIn(['inprogress','submitted', 'accepted','rejected', 'declined_under_review'], 'Correct Status is either inprogress, accepted, submitted, rejected or declined_under_review');
 
   if(this.errors) {
     return this.throw(new CustomError({
@@ -283,17 +283,13 @@ exports.update = function* updateLoan(next) {
   let body = this.request.body;
 
   try {
-    if(body.status === 'accepted' || body.status === 'declined_final' || body.status === 'declined_under_review' ) {
+    if(body.status === 'accepted' || body.status === 'rejected' || body.status === 'declined_under_review' ) {
       if(!canApprove) {
         throw new Error("You Don't have enough permissions to complete this action");
       }
     }
     let loan = yield LoanDal.get(query);
     let client    = yield ClientDal.get({ _id: loan.client });
-
-    if(loan.status === 'new') {
-      client = yield ClientDal.update({ _id: client._id }, { status: 'loan_application_inprogress' });
-    }
 
     if(body.status === 'accepted') {
       client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_accepted' });
@@ -306,13 +302,13 @@ exports.update = function* updateLoan(next) {
         });
       }
       
-    } else if(body.status === 'declined_final') {
-      client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_declined' });
+    } else if(body.status === 'rejected') {
+      client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_rejected' });
       let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed' });
       if(task) {
         yield NotificationDal.create({
           for: task.created_by,
-          message: `Loan Application of ${client.first_name} ${client.last_name} has been declined in Final`,
+          message: `Loan Application of ${client.first_name} ${client.last_name} has been Rejected in Final`,
           task_ref: task._id
         });
       }
@@ -337,6 +333,8 @@ exports.update = function* updateLoan(next) {
           task_ref: _task._id
         });
       }
+    } else if(body.status === 'submitted') {
+      client = yield ClientDal.update({ _id: client._id }, { status: 'loan_application_inprogress' });
     }
     
     let mandatory = false;
