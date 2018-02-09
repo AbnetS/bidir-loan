@@ -9,8 +9,9 @@ const moment  = require('moment');
 const _       = require('lodash');
 const co      = require('co');
 
-const Form    = require('../models/form');
-const Question = require('../models/question');
+const Form          = require('../models/form');
+const Question      = require('../models/question');
+const Section       = require('../models/section');
 const mongoUpdate   = require('../lib/mongo-update');
 
 var returnFields = Form.attributes;
@@ -21,6 +22,9 @@ var population = [{
     path: 'sub_questions',
    select: Question.attributes,
   }
+},{
+  path: 'sections',
+  select: Section.attributes
 }];
 
 /**
@@ -159,7 +163,7 @@ exports.getCollectionByPagination = function getCollection(query, qs) {
 
   let opts = {
     select:  returnFields,
-    sortBy:   qs.sort || {},
+    sort:   qs.sort || {},
     populate: population,
     page:     qs.page,
     limit:    qs.limit

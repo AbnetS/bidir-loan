@@ -17,6 +17,7 @@ const validator  = require('validator');
 const config             = require('../config');
 const CustomError        = require('../lib/custom-error');
 const checkPermissions   = require('../lib/permissions');
+const FORM                = require ('../lib/enums').FORM;
 
 const Account            = require('../models/account');
 
@@ -30,6 +31,8 @@ const TaskDal            = require('../dal/task');
 const FormDal            = require('../dal/form');
 const AccountDal         = require('../dal/account');
 const ScreeningDal       = require('../dal/screening');
+const SectionDal         = require('../dal/section');
+const QuestionDal        = require('../dal/question');
 
 let hasPermission = checkPermissions.isPermitted('LOAN');
 
@@ -58,7 +61,8 @@ exports.create = function* createLoan(next) {
 
   try {
 
-    let loanForm = yield FormDal.get({ type: 'Loan Application' });
+
+    let loanForm = yield FormDal.get({ type: 'LOAN_APPLICATION' });
     if(!loanForm || !loanForm._id) {
       throw new Error('Loan Form Is Needed To Be Created In Order To Continue!')
     }
@@ -80,6 +84,7 @@ exports.create = function* createLoan(next) {
 
     // Create New Screening
     let answers = [];
+    let sections = [];
     let loanBody = {};
     loanForm = loanForm.toJSON();
 
@@ -104,11 +109,40 @@ exports.create = function* createLoan(next) {
       answers.push(answer);
     }
 
+    // Create Section Types
+    for(let section of loanForm.sections) {
+      let _answers = [];
+      delete section._id;
 
-    loanBody.answers = answers;
+      if(section.questions.length) {
+        for(let sub of section.questions) {
+          sub = yield QuestionDal.get({_id: sub });
+          sub = sub.toJSON();
+
+          delete sub._id;
+          let ans = yield AnswerDal.create(sub);
+
+          _answers.push(ans);
+        }
+      }
+
+      section.questions = _answers;
+
+      let _section = yield SectionDal.create(section);
+
+      sections.push(_section);
+    }
+
+    loanBody.questions = answers.slice();
+    loanBody.sections = sections.slice();
     loanBody.client = client._id;
     loanBody.title = 'Loan Form';
-    loanBody.description = `Loan Application For ${client.first_name} ${client.last_name}`;
+    loanBody.subtitle = loanForm.subtitle;
+    loanBody.purpose = `Loan Application For ${client.first_name} ${client.last_name}`;
+    loanBody.layout = loanForm.layout;
+    loanBody.has_sections = loanForm.has_sections;
+    loanBody.disclaimer = loanForm.disclaimer;
+    loanBody.signatures = loanForm.signatures.slice();
     loanBody.created_by = client.created_by;
     loanBody.branch = client.branch._id;
 
