@@ -22,16 +22,18 @@ var router  = Router();
  * out of the box. Use these params to query with pagination: `page=<RESULTS_PAGE`
  * and `per_page=<RESULTS_PER_PAGE>`.
  *
- * @apiSuccess {String} _id question id
+ * @apiSuccess {String} _id answer id
  * @apiSuccess {String} question_text Question Text Title
  * @apiSuccess {String} remark Question Remark
- * @apiSuccess {String} type Question Type ie _Yes/No_, _Fill In Blank_, or _Multiple Choice_
- * @apiSuccess {String} sub_answers Nested Sub Questions References
+ * @apiSuccess {String} type Question Type ie YES_NO, FILL_IN_BLANK, MULTIPLE_CHOICE, SINGLE_CHOICE, GROUPED
+ * @apiSuccess {String} sub_questions Nested Sub Questions References
  * @apiSuccess {Boolean} required Question required or not(true or false)
- * @apiSuccess {Array} options Questions Options
- * @apiSuccess {Array} single_choice Question Single Choice
- * @apiSuccess {Array} multiple_choice Question Multiple Choice
- * @apiSuccess {String} value Question Value
+ * @apiSuccess {Array} validation_factor Question Validation Factor ie NONE, ALPHANUMERIC, NUMERIC, ALPHABETIC
+ * @apiSuccess {Array} values Question Answer Values
+ * @apiSuccess {Array} options Question Choices Options
+ * @apiSuccess {Boolean} show Show Question true or false
+ * @apiSuccess {Array} prerequisities Question Prerequisities
+ * @apiSuccess {String} measurement_unit Measurement Unit
  *
  * @apiSuccessExample Response Example:
  *  {
@@ -41,16 +43,18 @@ var router  = Router();
  *    	_id : "556e1174a8952c9521286a60",
  *    	title: "Answer Title",
  *    	remark: "This is a remark",
- *    	type: "Yes/No",
- *    	sub_answers: [{
+ *    	type: "YES_NO",
+ *    	sub_questions: [{
  *		 	_id : "556e1174a8952c9521286a60",
  *       	....
  *    	}],
- *    	required: true
+ *    	required: true,
+ *      validation_factor: 'NONE',
  *    	options: ['Yes', 'No'],
- *    	single_choice: ['Yes'],
- *    	multiple_choice: [],
- *    value: ''
+ *      values: [],
+ *      measurement_unit: '',
+ *      show: true,
+ *      prerequisities: []
  *    }]
  *  }
  */
@@ -64,32 +68,36 @@ router.get('/paginate', acl(['*']), answerController.fetchAllByPagination);
  *
  * @apiDescription Get a user answer with the given id
  *
- * @apiSuccess {String} _id question id
+ * @apiSuccess {String} _id answer id
  * @apiSuccess {String} question_text Question Text Title
  * @apiSuccess {String} remark Question Remark
- * @apiSuccess {String} type Question Type ie _Yes/No_, _Fill In Blank_, or _Multiple Choice_
- * @apiSuccess {String} sub_answers Nested Sub Questions References
+ * @apiSuccess {String} type Question Type ie YES_NO, FILL_IN_BLANK, MULTIPLE_CHOICE, SINGLE_CHOICE, GROUPED
+ * @apiSuccess {String} sub_questions Nested Sub Questions References
  * @apiSuccess {Boolean} required Question required or not(true or false)
- * @apiSuccess {Array} options Questions Options
- * @apiSuccess {Array} single_choice Question Single Choice
- * @apiSuccess {Array} multiple_choice Question Multiple Choice
- * @apiSuccess {String} value Question Value
+ * @apiSuccess {Array} validation_factor Question Validation Factor ie NONE, ALPHANUMERIC, NUMERIC, ALPHABETIC
+ * @apiSuccess {Array} values Question Answer Values
+ * @apiSuccess {Array} options Question Choices Options
+ * @apiSuccess {Boolean} show Show Question true or false
+ * @apiSuccess {Array} prerequisities Question Prerequisities
+ * @apiSuccess {String} measurement_unit Measurement Unit
  *
  * @apiSuccessExample Response Example:
  *  {
- *    _id : "556e1174a8952c9521286a60",
- *    title: "Answer Title",
- *    remark: "This is a remark",
- *    type: "Yes/No",
- *    sub_answers: [{
- *		 _id : "556e1174a8952c9521286a60",
- *       ....
- *    }],
- *    	required: true
- *    	options: ['Yes', 'No'],
- *    	single_choice: ['Yes'],
- *    	multiple_choice: [],
- *      value: '' 
+ *      _id : "556e1174a8952c9521286a60",
+ *      title: "Answer Title",
+ *      remark: "This is a remark",
+ *      type: "YES_NO",
+ *      sub_questions: [{
+ *      _id : "556e1174a8952c9521286a60",
+ *        ....
+ *      }],
+ *      required: true,
+ *      validation_factor: 'NONE',
+ *      options: ['Yes', 'No'],
+ *      values: [],
+ *      measurement_unit: '',
+ *      show: true,
+ *      prerequisities: [] 
  *  }
  *
  */
@@ -111,32 +119,36 @@ router.get('/:id', acl(['*']), answerController.fetchOne);
  *    remark: "This is a remark too"
  * }
  *
- * @apiSuccess {String} _id question id
+ * @apiSuccess {String} _id answer id
  * @apiSuccess {String} question_text Question Text Title
  * @apiSuccess {String} remark Question Remark
- * @apiSuccess {String} type Question Type ie _Yes/No_, _Fill In Blank_, or _Multiple Choice_
- * @apiSuccess {String} sub_answers Nested Sub Questions References
+ * @apiSuccess {String} type Question Type ie YES_NO, FILL_IN_BLANK, MULTIPLE_CHOICE, SINGLE_CHOICE, GROUPED
+ * @apiSuccess {String} sub_questions Nested Sub Questions References
  * @apiSuccess {Boolean} required Question required or not(true or false)
- * @apiSuccess {Array} options Questions Options
- * @apiSuccess {Array} single_choice Question Single Choice
- * @apiSuccess {Array} multiple_choice Question Multiple Choice
- * @apiSuccess {String} value Question Value
+ * @apiSuccess {Array} validation_factor Question Validation Factor ie NONE, ALPHANUMERIC, NUMERIC, ALPHABETIC
+ * @apiSuccess {Array} values Question Answer Values
+ * @apiSuccess {Array} options Question Choices Options
+ * @apiSuccess {Boolean} show Show Question true or false
+ * @apiSuccess {Array} prerequisities Question Prerequisities
+ * @apiSuccess {String} measurement_unit Measurement Unit
  *
  * @apiSuccessExample Response Example:
  *  {
- *    _id : "556e1174a8952c9521286a60",
- *    title: "Answer Title",
- *    remark: "This is a remark too",
- *    type: "Yes/No",
- *    sub_answers: [{
- *		 _id : "556e1174a8952c9521286a60",
- *       ....
- *    }],
- *    	required: true
- *    	options: ['Yes', 'No'],
- *    	single_choice: ['Yes'],
- *    	multiple_choice: [],
- *      value: ''
+ *      _id : "556e1174a8952c9521286a60",
+ *      title: "Answer Title",
+ *      remark: "This is a remark",
+ *      type: "YES_NO",
+ *      sub_questions: [{
+ *      _id : "556e1174a8952c9521286a60",
+ *        ....
+ *      }],
+ *      required: true,
+ *      validation_factor: 'NONE',
+ *      options: ['Yes', 'No'],
+ *      values: [],
+ *      measurement_unit: '',
+ *      show: true,
+ *      prerequisities: []
  *  }
  */
 router.put('/:id', acl(['*']), answerController.update);
