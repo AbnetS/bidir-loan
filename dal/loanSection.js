@@ -1,43 +1,47 @@
 'use strict';
-// Access Layer for Answer Data.
+// Access Layer for LoanSection Data.
 
 /**
  * Load Module Dependencies.
  */
-const debug   = require('debug')('api:dal-answer');
+const debug   = require('debug')('api:dal-section');
 const moment  = require('moment');
 const _       = require('lodash');
 const co      = require('co');
 
+const LoanSection    = require('../models/loanSection');
 const Answer    = require('../models/answer');
 const mongoUpdate   = require('../lib/mongo-update');
 
-var returnFields = Answer.attributes;
+var returnFields = LoanSection.attributes;
 var population = [{
-  path: 'sub_answers',
-  select: Answer.attributes
+  path: 'answers',
+  select: Answer.attributes,
+  options: {
+    sort: { number: '1' }
+  }
 }];
 
 /**
- * create a new answer.
+ * create a new section.
  *
- * @desc  creates a new answer and saves them
+ * @desc  creates a new section and saves them
  *        in the database
  *
- * @param {Object}  answerData  Data for the answer to create
+ * @param {Object}  sectionData  Data for the section to create
  *
  * @return {Promise}
  */
-exports.create = function create(answerData) {
-  debug('creating a new answer');
+exports.create = function create(sectionData) {
+  debug('creating a new section');
 
   return co(function* () {
 
-    let unsavedAnswer = new Answer(answerData);
-    let newAnswer = yield unsavedAnswer.save();
-    let answer = yield exports.get({ _id: newAnswer._id });
+    let unsavedLoanSection = new LoanSection(sectionData);
+    let newLoanSection = yield unsavedLoanSection.save();
+    let section = yield exports.get({ _id: newLoanSection._id });
 
-    return answer;
+    return section;
 
 
   });
@@ -45,37 +49,37 @@ exports.create = function create(answerData) {
 };
 
 /**
- * delete a answer
+ * delete a section
  *
- * @desc  delete data of the answer with the given
+ * @desc  delete data of the section with the given
  *        id
  *
  * @param {Object}  query   Query Object
  *
  * @return {Promise}
  */
-exports.delete = function deleteAnswer(query) {
-  debug('deleting answer: ', query);
+exports.delete = function deleteLoanSection(query) {
+  debug('deleting section: ', query);
 
   return co(function* () {
-    let answer = yield exports.get(query);
+    let section = yield exports.get(query);
     let _empty = {};
 
-    if(!answer) {
+    if(!section) {
       return _empty;
     } else {
-      yield answer.remove();
+      yield section.remove();
 
-      return answer;
+      return section;
     }
 
   });
 };
 
 /**
- * update a answer
+ * update a section
  *
- * @desc  update data of the answer with the given
+ * @desc  update data of the section with the given
  *        id
  *
  * @param {Object} query Query object
@@ -84,7 +88,7 @@ exports.delete = function deleteAnswer(query) {
  * @return {Promise}
  */
 exports.update = function update(query, updates) {
-  debug('updating answer: ', query);
+  debug('updating section: ', query);
 
   let now = moment().toISOString();
   let opts = {
@@ -94,44 +98,44 @@ exports.update = function update(query, updates) {
 
   updates = mongoUpdate(updates);
 
-  return Answer.findOneAndUpdate(query, updates, opts)
+  return LoanSection.findOneAndUpdate(query, updates, opts)
       .populate(population)
       .exec();
 };
 
 /**
- * get a answer.
+ * get a section.
  *
- * @desc get a answer with the given id from db
+ * @desc get a section with the given id from db
  *
  * @param {Object} query Query Object
  *
  * @return {Promise}
  */
-exports.get = function get(query, answer) {
-  debug('getting answer ', query);
+exports.get = function get(query, section) {
+  debug('getting section ', query);
 
-  return Answer.findOne(query, returnFields)
+  return LoanSection.findOne(query, returnFields)
     .populate(population)
     .exec();
 
 };
 
 /**
- * get a collection of answers
+ * get a collection of sections
  *
- * @desc get a collection of answers from db
+ * @desc get a collection of sections from db
  *
  * @param {Object} query Query Object
  *
  * @return {Promise}
  */
 exports.getCollection = function getCollection(query, qs) {
-  debug('fetching a collection of answers');
+  debug('fetching a collection of sections');
 
   return new Promise((resolve, reject) => {
     resolve(
-     Answer
+     LoanSection
       .find(query, returnFields)
       .populate(population)
       .stream());
@@ -141,16 +145,16 @@ exports.getCollection = function getCollection(query, qs) {
 };
 
 /**
- * get a collection of answers using pagination
+ * get a collection of sections using pagination
  *
- * @desc get a collection of answers from db
+ * @desc get a collection of sections from db
  *
  * @param {Object} query Query Object
  *
  * @return {Promise}
  */
 exports.getCollectionByPagination = function getCollection(query, qs) {
-  debug('fetching a collection of answers');
+  debug('fetching a collection of sections');
 
   let opts = {
     select:  returnFields,
@@ -162,7 +166,7 @@ exports.getCollectionByPagination = function getCollection(query, qs) {
 
 
   return new Promise((resolve, reject) => {
-    Answer.paginate(query, opts, function (err, docs) {
+    LoanSection.paginate(query, opts, function (err, docs) {
       if(err) {
         return reject(err);
       }

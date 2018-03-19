@@ -32,6 +32,7 @@ const FormDal            = require('../dal/form');
 const AccountDal         = require('../dal/account');
 const ScreeningDal       = require('../dal/screening');
 const SectionDal         = require('../dal/section');
+const LoanSectionDal     = require('../dal/loanSection');
 const QuestionDal        = require('../dal/question');
 
 let hasPermission = checkPermissions.isPermitted('LOAN');
@@ -126,9 +127,9 @@ exports.create = function* createLoan(next) {
         }
       }
 
-      section.questions = _answers;
+      section.answers = _answers;
 
-      let _section = yield SectionDal.create(section);
+      let _section = yield LoanSectionDal.create(section);
 
       sections.push(_section);
     }
@@ -658,4 +659,48 @@ exports.search = function* searchLoans(next) {
       message: ex.message
     }));
   }
+};
+
+
+/**
+ * Get a client loan.
+ *
+ * @desc Fetch a loan with the given id from the database.
+ *
+ * @param {Function} next Middleware dispatcher
+ */
+exports.getClientLoan = function* getClientLoan(next) {
+  debug(`fetch client loan: ${this.params.id}`);
+
+  /*let isPermitted = yield hasPermission(this.state._user, 'VIEW');
+  if(!isPermitted) {
+    return this.throw(new CustomError({
+      type: 'CLIENT_LOAN_VIEW_ERROR',
+      message: "You Don't have enough permissions to complete this action"
+    }));
+  }*/
+
+  let query = {
+    client: this.params.id
+  };
+
+  try {
+    let loan = yield LoanDal.get(query);
+    if(!loan) throw new Error('Client Has No Loan Application!');
+
+    yield LogDal.track({
+      event: 'view_client_loan',
+      user: this.state._user._id ,
+      message: `View Client Loan - ${loan.title}`
+    });
+
+    this.body = loan;
+
+  } catch(ex) {
+    return this.throw(new CustomError({
+      type: 'CLIENT_LOAN_VIEW_ERROR',
+      message: ex.message
+    }));
+  }
+
 };

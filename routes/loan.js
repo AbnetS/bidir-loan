@@ -188,6 +188,60 @@ router.get('/paginate', acl(['*']), loanController.fetchAllByPagination);
  */
 router.get('/search', acl(['*']), loanController.search);
 
+/**
+ * @api {get} /loans/clients/:id Get Client Loan
+ * @apiVersion 1.0.0
+ * @apiName ClientLoan
+ * @apiGroup Loan
+ *
+ * @apiDescription Get a client loan 
+ *
+ * @apiSuccess {String} _id loan id
+ * @apiSuccess {String} type Form Type LOAN_APPLICATION
+ * @apiSuccess {String} subtitle Form Subtitle
+ * @apiSuccess {String} title Form Title
+ * @apiSuccess {String} purpose Form Purpose
+ * @apiSuccess {Array} questions Form Questions
+ * @apiSuccess {String} layout Form Layout ie TWO_COLUMNS or THREE_COLUMNS 
+ * @apiSuccess {Array} sections Form Sections
+ * @apiSuccess {Boolean} has_sections If Form has Sections
+ * @apiSuccess {String} disclaimer Disclaimer
+ * @apiSuccess {Array} signatures Accepted Signatures
+ * @apiSuccess {String} created_by User registering this
+ * @apiSuccess {String} client Client Reference being screened
+ * @apiSuccess {String} status Status ie incomplete, completed, cancelled, approved or submitted
+ *
+ * @apiSuccessExample Response Example:
+ *  {
+ *    _id : "556e1174a8952c9521286a60",
+ *    type: "LOAN_APPLICATION",
+ *    subtitle: "Subtitle",
+ *    title: "Title",
+ *    purpose: "Loan Processing",
+ *    has_sections: false,
+ *    sections: [],
+ *    layout: 'TWO_COLUMNS',
+ *    disclaimer: "",
+ *    signatures: ["Applicant", "Filled By", "Checked By"],
+ *    questions: ]{
+ *     _id : "556e1174a8952c9521286a60",
+ *       ....
+ *    }],
+ *    created_by: {
+ *     _id : "556e1174a8952c9521286a60",
+ *       ....
+ *    },
+ *    client: {
+ *     _id : "556e1174a8952c9521286a60",
+ *       ....
+ *    },
+ *    status: "incomplete"
+ *  }
+ *
+ */
+router.get('/clients/:id', acl(['*']), loanController.getClientLoan);
+
+
 
 /**
  * @api {get} /loans/:id Get Loan Loan

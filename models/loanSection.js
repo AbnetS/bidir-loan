@@ -1,4 +1,4 @@
-// Section Model Definiton.
+// LoanSection Model Definiton.
 
 /**
  * Load Module Dependencies.
@@ -9,16 +9,16 @@ var paginator = require('mongoose-paginate');
 
 var Schema = mongoose.Schema;
 
-var SectionSchema = new Schema({       
+var LoanSectionSchema = new Schema({       
     title:           { type: String, default: '' },
     number:          { type: Number, default: 1 },
-    questions:       [{ type: Schema.Types.ObjectId, ref: 'Question' }],
+    answers:       [{ type: Schema.Types.ObjectId, ref: 'Answer' }],
     date_created:    { type: Date },
     last_modified:   { type: Date }
 });
 
 // add mongoose-troop middleware to support pagination
-SectionSchema.plugin(paginator);
+LoanSectionSchema.plugin(paginator);
 
 /**
  * Pre save middleware.
@@ -27,7 +27,7 @@ SectionSchema.plugin(paginator);
  *          attributes prior to save.
  *        - Hash tokens password.
  */
-SectionSchema.pre('save', function preSaveMiddleware(next) {
+LoanSectionSchema.pre('save', function preSaveMiddleware(next) {
   var instance = this;
 
   // set date modifications
@@ -41,17 +41,17 @@ SectionSchema.pre('save', function preSaveMiddleware(next) {
 });
 
 /**
- * Filter Section Attributes to expose
+ * Filter LoanSection Attributes to expose
  */
-SectionSchema.statics.attributes = {
+LoanSectionSchema.statics.attributes = {
   title: 1,
   number: 1,
-  questions: 1,
+  answers: 1,
   date_created: 1,
   last_modified: 1,
   _id: 1
 };
 
 
-// Expose Section model
-module.exports = mongoose.model('Section', SectionSchema);
+// Expose LoanSection model
+module.exports = mongoose.model('LoanSection', LoanSectionSchema);

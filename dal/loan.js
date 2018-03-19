@@ -11,21 +11,44 @@ const co      = require('co');
 
 const Loan          = require('../models/loan');
 const Answer        = require('../models/answer');
-const Section        = require('../models/section');
+const LoanSection   = require('../models/loanSection');
 const Client        = require('../models/client');
 const mongoUpdate   = require('../lib/mongo-update');
 
 var returnFields = Loan.attributes;
 var population = [{
-  path: 'questions',
+  path: 'answers',
   select: Answer.attributes,
+  options: {
+    sort: { number: '1' }
+  },
   populate: {
-    path: 'sub_questions',
-    select: Answer.attributes
+    path: 'sub_answers',
+    select: Answer.attributes,
+    options: {
+      sort: { number: '1' }
+    }
   }
 },{
   path: 'sections',
-  select: Section.attributes,
+  select: LoanSection.attributes,
+  options: {
+    sort: { number: '1' }
+  },
+  populate: {
+    path: 'answers',
+    select: Answer.attributes,
+    options: {
+      sort: { number: '1' }
+    },
+    populate: {
+      path: 'sub_answers',
+      select: Answer.attributes,
+      options: {
+        sort: { number: '1' }
+      }
+    }
+  }
 },{
   path: 'client',
   select: Client.attributes
