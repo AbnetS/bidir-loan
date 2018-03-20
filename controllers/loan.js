@@ -23,7 +23,6 @@ const Account            = require('../models/account');
 
 const TokenDal           = require('../dal/token');
 const LoanDal            = require('../dal/loan');
-const AnswerDal          = require('../dal/answer');
 const LogDal             = require('../dal/log');
 const NotificationDal    = require('../dal/notification');
 const ClientDal          = require('../dal/client');
@@ -32,7 +31,6 @@ const FormDal            = require('../dal/form');
 const AccountDal         = require('../dal/account');
 const ScreeningDal       = require('../dal/screening');
 const SectionDal         = require('../dal/section');
-const LoanSectionDal     = require('../dal/loanSection');
 const QuestionDal        = require('../dal/question');
 
 let hasPermission = checkPermissions.isPermitted('LOAN');
@@ -84,57 +82,41 @@ exports.create = function* createLoan(next) {
     }
 
     // Create New Screening
-    let answers = [];
+    let questions = [];
     let sections = [];
     let loanBody = {};
     loanForm = loanForm.toJSON();
 
     // Create Answer Types
     for(let question of loanForm.questions) {
-      let subs = [];
-      delete question._id;
+      question = yield createQuestion(question);
 
-      if(question.sub_questions.length) {
-        for(let sub of question.sub_questions) {
-          delete sub._id;
-          let ans = yield AnswerDal.create(sub);
-
-          subs.push(ans);
-        }
-      }
-
-      question.sub_questions = subs;
-
-      let answer = yield AnswerDal.create(question);
-
-      answers.push(answer);
+      questions.push(question);
     }
 
     // Create Section Types
     for(let section of loanForm.sections) {
-      let _answers = [];
+      let _questions = [];
       delete section._id;
 
       if(section.questions.length) {
-        for(let sub of section.questions) {
-          sub = yield QuestionDal.get({_id: sub });
-          sub = sub.toJSON();
+        for(let question of section.questions) {
 
-          delete sub._id;
-          let ans = yield AnswerDal.create(sub);
+          question = yield createQuestion(question);
 
-          _answers.push(ans);
+          _questions.push(question);
         }
+
       }
 
-      section.answers = _answers;
+      section.question = _questions;
 
-      let _section = yield LoanSectionDal.create(section);
+      let _section = yield SectionDal.create(section);
 
       sections.push(_section);
     }
 
-    loanBody.questions = answers.slice();
+    loanBody.questions = questions.slice();
     loanBody.sections = sections.slice();
     loanBody.client = client._id;
     loanBody.title = 'Loan Form';
@@ -704,3 +686,51 @@ exports.getClientLoan = function* getClientLoan(next) {
   }
 
 };
+
+// Utilities
+function createQuestion(question) {
+  return co(function* () {
+    if(!question._id) {
+      question = yield QuestionDal.get({ _id: question });
+
+      question = question.toJSON();
+    }
+
+    let subs = [];
+    delete question._id;
+
+    if(question.sub_questions.length) {
+      for(let sub of question.sub_questions) {
+        delete sub._id;
+        let ans = yield createQuestion(sub);
+
+        subs.push(ans);
+      }
+
+      question.sub_questions = subs;
+    }
+
+    // TODO on not created question
+    if(question.prerequisites.length) {
+      let preqs = [];
+      for(let preq of question.prerequisites) {
+        let ques = yield QuestionDal.get({ _id: preq.question });
+        let q  = yield QuestionDal.get({ question_text: ques.question_text });
+
+        preqs.push({
+          answer: '',
+          question: q._id
+        })
+      }
+
+      question.prerequisites = preqs;
+    }
+
+    console.log(question)
+
+    question = yield QuestionDal.create(question);
+
+    return question;
+
+  })
+}

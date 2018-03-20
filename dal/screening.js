@@ -10,16 +10,16 @@ const _       = require('lodash');
 const co      = require('co');
 
 const Screening     = require('../models/screening');
-const Answer        = require('../models/answer');
+const Question        = require('../models/question');
 const mongoUpdate   = require('../lib/mongo-update');
 
 var returnFields = Screening.attributes;
 var population = [{
-  path: 'answers',
-  select: Answer.attributes,
+  path: 'questions',
+  select: Question.attributes,
   populate: {
-    path: 'sub_answers',
-    select: Answer.attributes
+    path: 'sub_questions',
+    select: Question.attributes
   }
 }];
 

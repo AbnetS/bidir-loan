@@ -10,40 +10,40 @@ const _       = require('lodash');
 const co      = require('co');
 
 const Loan          = require('../models/loan');
-const Answer        = require('../models/answer');
-const LoanSection   = require('../models/loanSection');
+const Question        = require('../models/question');
+const Section       = require('../models/section');
 const Client        = require('../models/client');
 const mongoUpdate   = require('../lib/mongo-update');
 
 var returnFields = Loan.attributes;
 var population = [{
-  path: 'answers',
-  select: Answer.attributes,
+  path: 'questions',
+  select: Question.attributes,
   options: {
     sort: { number: '1' }
   },
   populate: {
-    path: 'sub_answers',
-    select: Answer.attributes,
+    path: 'sub_questions',
+    select: Question.attributes,
     options: {
       sort: { number: '1' }
     }
   }
 },{
   path: 'sections',
-  select: LoanSection.attributes,
+  select: Section.attributes,
   options: {
     sort: { number: '1' }
   },
   populate: {
-    path: 'answers',
-    select: Answer.attributes,
+    path: 'questions',
+    select: Question.attributes,
     options: {
       sort: { number: '1' }
     },
     populate: {
-      path: 'sub_answers',
-      select: Answer.attributes,
+      path: 'sub_questions',
+      select: Question.attributes,
       options: {
         sort: { number: '1' }
       }
