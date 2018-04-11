@@ -307,10 +307,11 @@ exports.update = function* updateLoan(next) {
     }
     let loan = yield LoanDal.get(query);
     let client    = yield ClientDal.get({ _id: loan.client });
+    let comment = body.comment ? body.comment : '';
 
     if(body.status === 'accepted') {
       client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_accepted' });
-      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed' });
+      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed', comment: comment });
       if(task) {
         yield NotificationDal.create({
           for: task.created_by,
@@ -321,7 +322,7 @@ exports.update = function* updateLoan(next) {
       
     } else if(body.status === 'rejected') {
       client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_rejected' });
-      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed' });
+      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed', comment: comment });
       if(task) {
         yield NotificationDal.create({
           for: task.created_by,
@@ -332,7 +333,7 @@ exports.update = function* updateLoan(next) {
 
     } else if(body.status === 'declined_under_review') {
       client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_application_inprogress' });
-      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed' });
+      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed', comment: comment });
       if(task) {
         // Create Review Task
         let _task = yield TaskDal.create({
@@ -342,7 +343,8 @@ exports.update = function* updateLoan(next) {
           entity_type: 'loan',
           created_by: this.state._user._id,
           user: task.created_by,
-          branch: loan.branch
+          branch: loan.branch,
+          comment: comment
         });
         yield NotificationDal.create({
           for: this.state._user._id,
@@ -386,6 +388,7 @@ exports.update = function* updateLoan(next) {
         entity_type: 'loan',
         created_by: this.state._user._id,
         branch: loan.branch
+        comment: comment
       })
     }
 
@@ -690,8 +693,10 @@ exports.getClientLoan = function* getClientLoan(next) {
 // Utilities
 function createQuestion(question) {
   return co(function* () {
-    if(!question._id) {
-      question = yield QuestionDal.get({ _id: question });
+    if(question) {
+      question = yield QuestionDal.get({ question_text: question.question_text });
+
+      if(!question) return;
 
       question = question.toJSON();
     }
@@ -725,8 +730,6 @@ function createQuestion(question) {
 
       question.prerequisites = preqs;
     }
-
-    console.log(question)
 
     question = yield QuestionDal.create(question);
 
