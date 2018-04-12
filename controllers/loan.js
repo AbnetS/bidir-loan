@@ -387,7 +387,7 @@ exports.update = function* updateLoan(next) {
         entity_ref: loan._id,
         entity_type: 'loan',
         created_by: this.state._user._id,
-        branch: loan.branch
+        branch: loan.branch,
         comment: comment
       })
     }
