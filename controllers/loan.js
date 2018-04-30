@@ -486,6 +486,12 @@ exports.fetchAllByPagination = function* fetchAllLoans(next) {
         };
     }
 
+    if(this.query.show_active) {
+      query.status = {
+        $in: ['inprogress','submitted', 'new', 'declined_under_review']
+      }
+    }
+
     let loans = yield LoanDal.getCollectionByPagination(query, opts);
 
     this.body = loans;
