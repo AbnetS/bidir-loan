@@ -358,23 +358,38 @@ exports.update = function* updateLoan(next) {
     
     let mandatory = false;
 
-    if(body.answers) {
-      let answers = [];
-
-      for(let answer of body.answers) {
-        let answerID = answer._id;
-
-        delete answer._id;
-        delete answer._v;
-        delete answer.date_created;
-        delete answer.last_modified;
-
-        let result = yield AnswerDal.update({ _id: answerID }, answer);
-
-        answers.push(result);
+    for(let section of body.sections) {
+      if(section._id) {
+        for(let question of section.questions) {
+          yield updateQuestions(question);
+        }
       }
+    }
+    delete body.sections;
 
-      body.answers = answers;
+    for(let question of body.questions) {
+      if(question._id) {
+        yield updateQuestions(question);
+      }
+    }
+    delete body.questions;
+
+    function updateQuestions(question) {
+      return co(function* () {
+        let subQuestions = question.sub_questions.slice();
+        let ref = question._id;
+
+        delete question.sub_questions;
+        delete question._v;
+        delete question.date_created;
+        delete question.last_modified;
+
+        yield QuestionDal.update({ _id: ref }, question);
+
+        for(let subQuestion of subQuestions) {
+            yield updateQuestions(subQuestion);
+        }
+      })
     }
 
     loan = yield LoanDal.update(query, body);
