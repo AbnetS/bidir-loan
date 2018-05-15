@@ -35,6 +35,8 @@ const QuestionDal        = require('../dal/question');
 
 let hasPermission = checkPermissions.isPermitted('LOAN');
 
+let PREQS = [];
+
 /**
  * Create a loan.
  *
@@ -89,9 +91,13 @@ exports.create = function* createLoan(next) {
 
     // Create Answer Types
     for(let question of loanForm.questions) {
+      PREQS = [];
       question = yield createQuestion(question);
 
-      questions.push(question);
+      if(question) {
+        yield createPrerequisites();
+        questions.push(question._id);
+      }
     }
 
     // Create Section Types
@@ -102,14 +108,17 @@ exports.create = function* createLoan(next) {
       if(section.questions.length) {
         for(let question of section.questions) {
 
+         PREQS = [];
           question = yield createQuestion(question);
-
-          _questions.push(question);
+          if(question) {
+            yield createPrerequisites();
+            _questions.push(question._id);
+          }
         }
 
       }
 
-      section.question = _questions;
+      section.questions = _questions;
 
       let _section = yield SectionDal.create(section);
 
@@ -736,25 +745,64 @@ function createQuestion(question) {
       question.sub_questions = subs;
     }
 
-    // TODO on not created question
-    if(question.prerequisites.length) {
-      let preqs = [];
-      for(let preq of question.prerequisites) {
-        let ques = yield QuestionDal.get({ _id: preq.question });
-        let q  = yield QuestionDal.get({ question_text: ques.question_text });
+    let prerequisites = question.prerequisites.slice();
 
-        preqs.push({
-          answer: '',
-          question: q._id
-        })
-      }
-
-      question.prerequisites = preqs;
-    }
+    question.prerequisites = [];
 
     question = yield QuestionDal.create(question);
 
+    PREQS.push({
+      _id: question._id,
+      question_text: question.question_text,
+      prerequisites: prerequisites
+    });
+
     return question;
 
+  })
+}
+
+function createPrerequisites() {
+  return co(function*() {
+    if(PREQS.length) {
+      for(let question of PREQS) {
+        let preqs = [];
+        for(let  prerequisite of question.prerequisites) {
+          let preq = yield Question.findOne({ _id: prerequisite.question }).exec();
+
+          let ques = yield findQuestion(preq.question_text);
+          if(ques) {
+            preqs.push({
+              answer: prerequisite.answer,
+              question: ques._id
+            })
+          }
+        }
+
+        yield QuestionDal.update({ _id: question._id }, {
+          prerequisites: preqs
+        })
+      }
+    } 
+  })
+}
+
+function findQuestion(text) {
+  return co(function* () {
+    let found = null;
+
+    if(PREQS.length) {
+      for(let question of PREQS) {
+
+        question = yield Question.findOne({ _id: question._id }).exec();
+
+        if(question.question_text == text) {
+          found = question;
+          break;
+        }
+      }
+    }
+
+    return found;
   })
 }
