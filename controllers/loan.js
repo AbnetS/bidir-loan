@@ -90,30 +90,37 @@ exports.create = function* createLoan(next) {
     loanForm = loanForm.toJSON();
 
     // Create Answer Types
-    for(let question of loanForm.questions) {
-      PREQS = [];
+   PREQS = [];
+    for(let question of screeningForm.questions) {
       question = yield createQuestion(question);
 
       if(question) {
-        yield createPrerequisites();
         questions.push(question._id);
       }
     }
 
+    yield createPrerequisites();
+
     // Create Section Types
-    for(let section of loanForm.sections) {
+    PREQS = [];
+    for(let section of screeningForm.sections) {
+      section = yield Section.findOne({ _id: section }).exec();
+      if(!section) continue;
+      section = section.toJSON();
+
       let _questions = [];
       delete section._id;
-
       if(section.questions.length) {
-        for(let question of section.questions) {
 
-         PREQS = [];
+        for(let question of section.questions) {
+          PREQS = [];
           question = yield createQuestion(question);
           if(question) {
-            yield createPrerequisites();
+
             _questions.push(question._id);
           }
+
+          
         }
 
       }
@@ -122,8 +129,10 @@ exports.create = function* createLoan(next) {
 
       let _section = yield SectionDal.create(section);
 
-      sections.push(_section);
+      sections.push(_section._id);
     }
+
+    yield createPrerequisites();
 
     loanBody.questions = questions.slice();
     loanBody.sections = sections.slice();
@@ -724,12 +733,12 @@ exports.getClientLoan = function* getClientLoan(next) {
 function createQuestion(question) {
   return co(function* () {
     if(question) {
-      question = yield QuestionDal.get({ question_text: question.question_text });
-
+      question = yield Question.findOne({ _id: question }).exec();
       if(!question) return;
 
       question = question.toJSON();
     }
+
 
     let subs = [];
     delete question._id;
@@ -739,7 +748,9 @@ function createQuestion(question) {
         delete sub._id;
         let ans = yield createQuestion(sub);
 
-        subs.push(ans);
+        if(ans) {
+          subs.push(ans._id);
+        }
       }
 
       question.sub_questions = subs;
@@ -757,10 +768,13 @@ function createQuestion(question) {
       prerequisites: prerequisites
     });
 
+
+
     return question;
 
   })
 }
+
 
 function createPrerequisites() {
   return co(function*() {
