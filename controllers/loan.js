@@ -20,6 +20,9 @@ const checkPermissions   = require('../lib/permissions');
 const FORM                = require ('../lib/enums').FORM;
 
 const Account            = require('../models/account');
+const Question           = require('../models/question');
+const Form               = require('../models/form');
+const Section            = require('../models/section');
 
 const TokenDal           = require('../dal/token');
 const LoanDal            = require('../dal/loan');
