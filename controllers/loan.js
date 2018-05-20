@@ -91,7 +91,7 @@ exports.create = function* createLoan(next) {
 
     // Create Answer Types
    PREQS = [];
-    for(let question of screeningForm.questions) {
+    for(let question of loanForm.questions) {
       question = yield createQuestion(question);
 
       if(question) {
@@ -103,7 +103,7 @@ exports.create = function* createLoan(next) {
 
     // Create Section Types
     PREQS = [];
-    for(let section of screeningForm.sections) {
+    for(let section of loanForm.sections) {
       section = yield Section.findOne({ _id: section }).exec();
       if(!section) continue;
       section = section.toJSON();
