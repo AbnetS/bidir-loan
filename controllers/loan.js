@@ -418,7 +418,7 @@ exports.update = function* updateLoan(next) {
     if(body.status && body.status === 'submitted') {
       // Create Task
       yield TaskDal.create({
-        task: `Approve Loan For of ${client.first_name} ${client.last_name}`,
+        task: `Approve Loan For ${client.first_name} ${client.last_name}`,
         task_type: 'approve',
         entity_ref: loan._id,
         entity_type: 'loan',
