@@ -23,6 +23,9 @@ const Account            = require('../models/account');
 const Question           = require('../models/question');
 const Form               = require('../models/form');
 const Section            = require('../models/section');
+const Screening          = require('../models/screening');
+const Loan               = require('../models/loan');
+const History            = require('../models/history');
 
 const TokenDal           = require('../dal/token');
 const LoanDal            = require('../dal/loan');
@@ -76,15 +79,25 @@ exports.create = function* createLoan(next) {
       throw new Error('Client Does Not Exist!!');
     }
 
-    let screening = yield ScreeningDal.get({ client: client._id });
+    let screening = yield Screening.findOne({ client: body.client })
+      .sort({ date_created: -1 })
+      .exec();
+    if (!screening) {
+      throw new Error("Client Has No Screening Form")
+    }
     if(screening.status != 'approved') {
       throw new Error('Screening Application Has Not Been Approved Yet');
     }
 
-    let loan = yield LoanDal.get({ client: client._id });
-    if(loan) {
-      throw new Error('Client Has A Loan Application Form Already!!');
+    let loan = yield Loan.findOne({ client: body.client })
+      .sort({ date_created: -1 })
+      .exec();
+    if(loan && (loan.status === 'new'
+      || loan.status === 'submitted'
+      || loan.status === "inprogress")) {
+      throw new Error('Client Has A Loan Application In Progress!!');
     }
+
 
     // Create New Screening
     let questions = [];
@@ -155,6 +168,12 @@ exports.create = function* createLoan(next) {
 
     yield ClientDal.update({ _id: client._id }, { status: 'loan_application_new'});
 
+     yield History.findOneAndUpdate({
+      client: client._id
+    },{
+      $push: { loans: loan._id }
+    })
+
     this.body = loan;
 
 
@@ -166,6 +185,8 @@ exports.create = function* createLoan(next) {
   }
 
 };
+
+
 
 
 /**
