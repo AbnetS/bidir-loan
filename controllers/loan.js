@@ -309,7 +309,7 @@ exports.update = function* updateLoan(next) {
 
   this.checkBody('status')
       .notEmpty('Status should not be empty')
-      .isIn(['inprogress','submitted', 'accepted','rejected', 'declined_under_review'], 'Correct Status is either inprogress, accepted, submitted, rejected or declined_under_review');
+      .isIn(['inprogress','submitted', 'accepted','rejected', 'declined_under_review', 'loan_paid'], 'Correct Status is either inprogress, accepted, submitted, rejected, loan_paid or declined_under_review');
 
   if(this.errors) {
     return this.throw(new CustomError({
@@ -325,7 +325,7 @@ exports.update = function* updateLoan(next) {
   let body = this.request.body;
 
   try {
-    if(body.status === 'accepted' || body.status === 'rejected' || body.status === 'declined_under_review' ) {
+    if(body.status === 'loan_paid' || body.status === 'accepted' || body.status === 'rejected' || body.status === 'declined_under_review' ) {
       if(!canApprove) {
         throw new Error("You Don't have enough permissions to complete this action");
       }
@@ -341,6 +341,17 @@ exports.update = function* updateLoan(next) {
         yield NotificationDal.create({
           for: task.created_by,
           message: `Loan Application of ${client.first_name} ${client.last_name} has been accepted`,
+          task_ref: task._id
+        });
+      }
+
+    } else if(body.status === 'loan_paid') {
+      client = yield ClientDal.update({ _id: loan.client }, { status: 'loan_paid' });
+      let task = yield TaskDal.update({ entity_ref: loan._id }, { status: 'completed', comment: comment });
+      if(task) {
+        yield NotificationDal.create({
+          for: task.created_by,
+          message: `Loan of ${client.first_name} ${client.last_name} has been Paid`,
           task_ref: task._id
         });
       }
