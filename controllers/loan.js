@@ -394,22 +394,27 @@ exports.update = function* updateLoan(next) {
     
     let mandatory = false;
 
-    for(let section of body.sections) {
-      if(section._id) {
-        for(let question of section.questions) {
+    if (body.sections) {
+      for(let section of body.sections) {
+        if(section._id) {
+          for(let question of section.questions) {
+            yield updateQuestions(question);
+          }
+        }
+      }
+      delete body.sections;
+    }
+
+    if (body.questions) {
+      for(let question of body.questions) {
+        if(question._id) {
           yield updateQuestions(question);
         }
       }
-    }
-    delete body.sections;
+      delete body.questions;
 
-    for(let question of body.questions) {
-      if(question._id) {
-        yield updateQuestions(question);
-      }
     }
-    delete body.questions;
-
+    
     function updateQuestions(question) {
       return co(function* () {
         let subQuestions = question.sub_questions.slice();
