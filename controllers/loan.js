@@ -82,6 +82,41 @@ exports.create = function* createLoan(next) {
 
     let loan = yield validateCycle(body)
 
+    let history = yield History.findOne({client: client._id}).exec()
+    if (!history) {
+      throw new Error('Client Has No Loan History');
+
+    } else {
+      history = history.toJSON();
+
+      let cycleOk = true;
+      let loanPresent = true;
+      let whichCycle = history.cycle_number;
+      let missingApplications = [];
+
+      for(let cycle of history.cycles) {
+        if (cycle.cycle_number === history.cycle_number) {
+          if (!cycle.screening) {
+            !cycle.screening ? missingApplications.push('Screening') : null;
+            cycleOk = false;
+            break;
+          } else if (cycle.loan) {
+            loanPresent = false;
+            break;
+          }
+        }
+      }
+
+      if (!cycleOk) {
+        throw new Error(`Loan Cycle (${whichCycle}) is in progress. Missing ${missingApplications.join(', ')} Application(s)`);
+      }
+
+      if (!loanPresent) {
+        throw new Error(`Loan Cycle (${whichCycle}) is in progress. Move To ACAT Application(s)`);
+      }
+    }
+
+
     // Create New Loan
     let questions = [];
     let sections = [];
@@ -151,9 +186,7 @@ exports.create = function* createLoan(next) {
 
     yield ClientDal.update({ _id: client._id }, { status: 'loan_application_new'});
 
-    let history = yield History.findOne({client: client._id}).exec()
     if (history) {
-      history = history.toJSON()
       let cycles = history.cycles.slice();
 
       for(let cycle of cycles) {
