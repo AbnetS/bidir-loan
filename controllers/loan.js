@@ -151,11 +151,28 @@ exports.create = function* createLoan(next) {
 
     yield ClientDal.update({ _id: client._id }, { status: 'loan_application_new'});
 
-     yield History.findOneAndUpdate({
-      client: client._id
-    },{
-      $push: { loans: loan._id }
-    })
+    let history = yield History.findOne({client: client._id}).exec()
+    if (history) {
+      history = history.toJSON()
+      let cycles = history.cycles.slice();
+
+      for(let cycle of cycles) {
+        if (cycle.cycle_number === history.cycle_number) {
+          cycle.loan = loan._id;
+          cycle.last_edit_by = this.state._user._id;
+          cycle.last_modified = moment().toISOString();
+        }
+      }
+
+      yield History.findOneAndUpdate({
+        _id: history._id
+      },{
+        $set: {
+          cycles: cycles,
+          last_modified:  moment().toISOString()
+        }
+      }).exec()
+    }
 
     this.body = loan;
 
@@ -879,7 +896,7 @@ function validateCycle(body) {
 
     for(let acat of clientACATS) {
       if(acat.status === 'new' || acat.status === 'submitted' || acat.status === 'resubmitted' || acat.status === "inprogress") {
-        throw new Error('Client Has A Loan in progress!!')
+        throw new Error('Client Has An ACAT in progress!!')
       }
     }
 
