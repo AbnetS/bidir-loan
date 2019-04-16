@@ -52,7 +52,9 @@ let PREQS = [];
  * @param {Function} next Middleware dispatcher
  *
  */
+
 exports.create = function* createLoan(next) {
+  console.log('create loan');
   debug('create loan');
 
   let body = this.request.body;
@@ -80,41 +82,44 @@ exports.create = function* createLoan(next) {
       throw new Error('Client Does Not Exist!!');
     }
 
-    let loan = yield validateCycle(body)
+    let loan = yield validateCycle(body);
+    let history = null;
 
-    let history = yield History.findOne({client: client._id}).exec()
-    if (!history) {
-      throw new Error('Client Has No Loan History');
+    if (!body.for_group){
+      let history = yield History.findOne({client: client._id}).exec()
+      if (!history) {
+        throw new Error('Client Has No Loan History');
 
-    } else {
-      history = history.toJSON();
+      } else {
+        history = history.toJSON();
 
-      let cycleOk = true;
-      let loanPresent = true;
-      let whichCycle = history.cycle_number;
-      let missingApplications = [];
+        let cycleOk = true;
+        let loanPresent = true;
+        let whichCycle = history.cycle_number;
+        let missingApplications = [];
 
-      for(let cycle of history.cycles) {
-        if (cycle.cycle_number === history.cycle_number) {
-          if (!cycle.screening) {
-            !cycle.screening ? missingApplications.push('Screening') : null;
-            cycleOk = false;
-            break;
-          } else if (cycle.loan) {
-            loanPresent = false;
-            break;
+        for(let cycle of history.cycles) {
+          if (cycle.cycle_number === history.cycle_number) {
+            if (!cycle.screening) {
+              !cycle.screening ? missingApplications.push('Screening') : null;
+              cycleOk = false;
+              break;
+            } else if (cycle.loan) {
+              loanPresent = false;
+              break;
+            }
           }
         }
-      }
 
-      if (!cycleOk) {
-        throw new Error(`Loan Cycle (${whichCycle}) is in progress. Missing ${missingApplications.join(', ')} Application(s)`);
-      }
+        if (!cycleOk) {
+          throw new Error(`Loan Cycle (${whichCycle}) is in progress. Missing ${missingApplications.join(', ')} Application(s)`);
+        }
 
-      if (!loanPresent) {
-        throw new Error(`Loan Cycle (${whichCycle}) is in progress. Move To ACAT Application(s)`);
+        if (!loanPresent) {
+          throw new Error(`Loan Cycle (${whichCycle}) is in progress. Move To ACAT Application(s)`);
+        }
       }
-    }
+  }
 
 
     // Create New Loan
@@ -782,7 +787,7 @@ exports.getClientLoan = function* getClientLoan(next) {
   };
 
   try {
-    let loan = yield LoanDal.get(query);
+    let loan = yield LoanDal.get(query, "last");
     if(!loan) throw new Error('Client Has No Loan Application!');
 
     yield LogDal.track({

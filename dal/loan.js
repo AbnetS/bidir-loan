@@ -144,12 +144,19 @@ exports.update = function update(query, updates) {
  *
  * @return {Promise}
  */
-exports.get = function get(query, loan) {
+exports.get = function get(query, sort) {
   debug('getting loan ', query);
 
-  return Loan.findOne(query, returnFields)
-    .populate(population)
-    .exec();
+  if (sort && sort === "last") {
+    return Loan.findOne(query, returnFields)
+      .sort({ date_created: "desc" })
+      .populate(population)
+      .exec();
+  } else {
+    return Loan.findOne(query, returnFields)    
+      .populate(population)
+      .exec();
+  }
 
 };
 
