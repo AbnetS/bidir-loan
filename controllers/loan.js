@@ -185,6 +185,9 @@ exports.create = function* createLoan(next) {
     loanBody.signatures = loanForm.signatures.slice();
     loanBody.created_by = client.created_by;
     loanBody.branch = client.branch._id;
+    if (body.for_group){
+      loanBody.for_group = true;
+    }
 
     // Create Loan Type
     loan = yield LoanDal.create(loanBody);
