@@ -86,7 +86,7 @@ exports.create = function* createLoan(next) {
     let history = null;
 
     if (!body.for_group){
-      let history = yield History.findOne({client: client._id}).exec()
+      history = yield History.findOne({client: client._id}).exec()
       if (!history) {
         throw new Error('Client Has No Loan History');
 
