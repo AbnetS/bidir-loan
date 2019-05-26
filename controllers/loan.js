@@ -152,7 +152,7 @@ exports.create = function* createLoan(next) {
       if(section.questions.length) {
 
         for(let question of section.questions) {
-          PREQS = [];
+          //PREQS = [];
           question = yield createQuestion(question);
           if(question) {
 
