@@ -227,9 +227,6 @@ exports.create = function* createLoan(next) {
 
 };
 
-
-
-
 /**
  * Get a single loan.
  *
